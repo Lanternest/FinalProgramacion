@@ -12,86 +12,186 @@ class color
 }
 
 public class HomeBanking {
+    private static final GestorBancario gestor = new GestorBancario();
+    private static final Scanner scanner = new Scanner(System.in);
+    private static Cliente clienteActual = null;
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args){
+        IniciarDatosEjemplo();
         PantallaBienvenida();
+    }
+
+    private static void IniciarDatosEjemplo() {
+        // Registrar algunos clientes de ejemplo
+        gestor.registrarCliente("Claudia", "Naveda", "12345678",
+                "Calle 123", "261 555-1234",
+                "cnaveda@email.com", generarNumeroCuenta(),
+                1000000);
+        gestor.crearUsuario("12345678", "cnaveda", "7218");
     }
 
     public static void PantallaBienvenida()
     {
-        //Variables
-        final String usuario="lomuchacho";
-        final String pass="7218";
+        System.out.println(color.verde + "Bienvenido al Homebanking" + color.reset);
 
-        int saldo=1000000;
-//        Scanner miTeclado= new Scanner(System.in);
-        Scanner miTecladoS=new Scanner(System.in);
+        System.out.println(color.verde + "\n1. Iniciar Sesión");
+        System.out.println("2. Registrar Nuevo Cliente");
+        System.out.println("3. Salir" + color.reset);
+        System.out.print(color.amarillo + "\nSeleccione una opción: " + color.reset);
 
-        //Codigo
-        System.out.println(color.verde+"Bienvenido al Homebanking");
+        try {
+            int opcion = scanner.nextInt();
+            scanner.nextLine(); // Consumir salto de línea
 
-        System.out.println(color.amarillo+"Ingrese su usuario"+color.reset);
-        String iUsuario=miTecladoS.nextLine();
-        iUsuario=iUsuario.toLowerCase();
-
-        System.out.println(color.amarillo+"Ingrese su password"+color.reset);
-        String iPass=miTecladoS.nextLine();
-
-        ValidarDatos(iUsuario, usuario, iPass, pass);
-        MenuPrincipal(saldo);
-    }
-
-    public static void ValidarDatos(String iUsuario, String usuario,String iPass, String pass)
-    {
-        //Variables que necesitamos dentro de esta función
-        int intFallidos=0;
-        int intRestantes=5;
-        Scanner miTeclado= new Scanner(System.in);
-        Scanner miTecladoS=new Scanner(System.in);
-        //Código
-        while(!iUsuario.equals(usuario) || !iPass.equals(pass))
-        {
-            System.out.println(color.rojo+"Usuario o contraseña incorrectos");
-            intFallidos++;
-            intRestantes--;
-            if(intFallidos<5)
-            {
-                System.out.println("Número de intentos fallidos: "+intFallidos+". Le quedan "+intRestantes+" intentos restantes."+color.reset);
-                System.out.println("Intente de nuevo");
-
-                System.out.println(color.amarillo+"Ingrese su usuario "+color.reset);
-                iUsuario=miTecladoS.nextLine();
-                iUsuario=iUsuario.toLowerCase();
-
-                System.out.println(color.amarillo+"Ingrese su password "+color.reset);
-                iPass=miTecladoS.nextLine();
+            switch (opcion) {
+                case 1:
+                    IniciarSesion();
+                    break;
+                case 2:
+                    RegistrarNuevoCliente();
+                    break;
+                case 3:
+                    System.out.println("Gracias por usar nuestro servicio.");
+                    esperar();
+                    presentacionAlumnos();
+                    esperar();
+                    PantallaBienvenida();
+                default:
+                    System.out.println(color.rojo + "Opción no válida. Intente nuevamente." + color.reset);
+                    PantallaBienvenida();
             }
-            else if(intFallidos==5)
-            {
-                System.out.println("Su cuenta a sido bloqueada. Comuníquese con un asesor para blanqueo de PIN.");
-                System.out.println("Saliendo del sistema."+color.reset);
-                esperar();
-                esperar();
-                PantallaBienvenida();
-            }
+        } catch (Exception e) {
+            System.out.println(color.rojo + "Entrada inválida. Intente nuevamente." + color.reset);
+            scanner.nextLine(); // Limpiar buffer
+            PantallaBienvenida();
         }
     }
 
-    public static void MenuPrincipal(int saldo)
+    public static void IniciarSesion() {
+        System.out.println(color.amarillo + "Ingrese su usuario" + color.reset);
+        String iUsuario = scanner.nextLine().toLowerCase();
+
+        System.out.println(color.amarillo + "Ingrese su password" + color.reset);
+        String iPass = scanner.nextLine();
+
+        if (ValidarDatos(iUsuario, iPass)) {
+            Usuario usuario = gestor.buscarUsuario(iUsuario);
+            clienteActual = usuario.getCliente();
+            MenuPrincipal();
+        } else {
+            PantallaBienvenida();
+        }
+    }
+
+    public static boolean ValidarDatos(String iUsuario, String iPass) {
+        if (gestor.validarCredenciales(iUsuario, iPass)) {
+            return true;
+        }
+
+        Usuario usuario = gestor.buscarUsuario(iUsuario);
+        if (usuario != null && usuario.estaBloqueado()) {
+            System.out.println(color.rojo +"Su cuenta ha sido bloqueada. Comuníquese con un asesor para blanqueo de PIN." + color.reset);
+            esperar();
+            return false;
+        }
+
+        System.out.println(color.rojo + "Usuario o contraseña incorrectos" + color.reset);
+        System.out.println("Intentos restantes: " + usuario.getIntentosRestantes());
+        return false;
+    }
+
+    public static void RegistrarNuevoCliente() {
+        System.out.println(color.verde + "Registro de nuevo cliente" + color.reset);
+
+        System.out.print("Nombre: ");
+        String nombre = scanner.nextLine();
+
+        System.out.print("Apellido: ");
+        String apellido = scanner.nextLine();
+
+        System.out.print("DNI: ");
+        String dni = scanner.nextLine();
+
+        System.out.print("Dirección: ");
+        String direccion = scanner.nextLine();
+
+        System.out.print("Teléfono: ");
+        String telefono = scanner.nextLine();
+
+        System.out.print("Email: ");
+        String email = scanner.nextLine();
+
+        String numeroCuenta = generarNumeroCuenta();
+
+        if (gestor.registrarCliente(nombre, apellido, dni, direccion,
+                telefono, email, numeroCuenta, 0)) {
+            System.out.println("Cliente registrado correctamente");
+
+            System.out.print("Nombre de usuario deseado: ");
+            String nombreUsuario = scanner.nextLine();
+
+            System.out.print("Contraseña: ");
+            String password = scanner.nextLine();
+
+            if (gestor.crearUsuario(dni, nombreUsuario, password)) {
+                System.out.println("Usuario creado correctamente");
+            } else {
+                System.out.println("Error al crear usuario");
+            }
+        } else {
+            System.out.println("Error al registrar cliente");
+        }
+
+        PantallaBienvenida();
+    }
+
+    private static String generarNumeroCuenta() {
+        return "58" + System.currentTimeMillis();
+    }
+
+//    public static void ValidarDatos(String iUsuario, String usuario,String iPass, String pass)
+//    {
+//        //Código
+//        while(!iUsuario.equals(usuario) || !iPass.equals(pass))
+//        {
+//            System.out.println(color.rojo+"Usuario o contraseña incorrectos");
+//            intFallidos++;
+//            intRestantes--;
+//            if(intFallidos<5)
+//            {
+//                System.out.println("Número de intentos fallidos: "+intFallidos+". Le quedan "+intRestantes+" intentos restantes."+color.reset);
+//                System.out.println("Intente de nuevo");
+//
+//                System.out.println(color.amarillo+"Ingrese su usuario "+color.reset);
+//                iUsuario=miTecladoS.nextLine();
+//                iUsuario=iUsuario.toLowerCase();
+//
+//                System.out.println(color.amarillo+"Ingrese su password "+color.reset);
+//                iPass=miTecladoS.nextLine();
+//            }
+//            else if(intFallidos==5)
+//            {
+//                System.out.println("Su cuenta a sido bloqueada. Comuníquese con un asesor para blanqueo de PIN.");
+//                System.out.println("Saliendo del sistema."+color.reset);
+//                esperar();
+//                esperar();
+//                PantallaBienvenida();
+//            }
+//        }
+//    }
+
+    public static void MenuPrincipal()
     {
-        final String usuario="grupo31";
-        int extraccion=0;
-        int montoServicio=0;
+        System.out.println(color.verde + "\nBienvenid@ " + clienteActual.getNombre());
         Scanner miTeclado= new Scanner(System.in);
 
-
-        System.out.println(color.verde+"\nMenú Principal:");
+        System.out.println("\nMenú Principal:");
         System.out.println("1) Datos del usuario");
         System.out.println("2) Consultar saldo");
         System.out.println("3) Realizar una extracción");
         System.out.println("4) Transferencia");
-        System.out.println("5) Pago online"+color.reset);
+        System.out.println("5) Pago online");
+        System.out.println("6) Cerrar Sesión"+color.reset);
         System.out.print(color.amarillo+"Seleccione una opción: "+color.reset);
 
         try
@@ -102,38 +202,44 @@ public class HomeBanking {
             switch (opc)
             {
                 case 1:
-                    System.out.println("\nDatos de usuario:"+"\nCaja de ahorro Número de cuenta: 58246789554778552"+ "\nTitular de la cuenta: Grupo31");
-                    volverAlMenuOpciones(saldo);
+                    System.out.println("\nDatos de usuario:"+"\nCaja de ahorro Número de cuenta: " + clienteActual.getNumeroCuenta() + "\nTitular de la cuenta: " + clienteActual.getNombre()+ " "+ clienteActual.getApellido());
+                    volverAlMenuOpciones();
                     break;
                 case 2:
-                    mostrarSaldo(saldo);
+                    mostrarSaldo();
                     break;
                 case 3:
-                    saldo=extraccionDinero(saldo);
+                    extraccionDinero();
                     break;
                 case 4:
-                    saldo=Transferencia(saldo);
+                    Transferencia();
                     break;
                 case 5:
-                    saldo=PagoServicio(saldo);
+                    PagoServicio();
                     break;
+                case 6:
+                    System.out.println("Por favor, extraiga su tarjeta.");
+                    esperar();
+                    presentacionAlumnos();
+                    System.exit(0);
                 default:
                     System.out.println(color.rojo+"Opción no válida. Inténtelo de nuevo."+color.reset);
-                    MenuPrincipal(saldo);
+                    MenuPrincipal();
                     break;
             }
         }
         catch (Exception e)
         {
             System.out.println(color.rojo+"Debe ingresar solo números"+color.reset);
-            MenuPrincipal(saldo);
+            MenuPrincipal();
         }
 
     }
 
-    public static int extraccionDinero (int saldo)
+    public static void extraccionDinero ()
     {
-        int montoRetiro=0;
+        int saldo = clienteActual.getSaldo();
+        int montoRetiro;
         Scanner miTeclado= new Scanner(System.in);
 
         try
@@ -145,40 +251,37 @@ public class HomeBanking {
             {
                 System.out.println(color.rojo+"\nSu saldo es insuficiente para realizar la extracción" + color.reset);
                 esperar();
-                volverAlMenuOpciones(saldo);
+                volverAlMenuOpciones();
             }
             else if (saldo>montoRetiro)
             {
-                System.out.println(color.amarillo+"\nUsted realizó una extracción de: $"+montoRetiro + ". Su saldo disponible en pesos es de: $" + (saldo-montoRetiro)+color.reset);
-                saldo=saldo-montoRetiro;
+                clienteActual.setSaldo(saldo-montoRetiro);
+                System.out.println(color.amarillo+"\nUsted realizó una extracción de: $"+montoRetiro + ". Su saldo disponible en pesos es de: $" + clienteActual.getSaldo()+color.reset);
                 FileWriter fw = new FileWriter("movimientos.txt", true);
                 PrintWriter salida = new PrintWriter(fw);
                 Date fecha = new Date();
                 salida.println(fecha+" Extracción: $"+montoRetiro);
                 salida.close();
-                volverAlMenuOpciones(saldo);
-                return saldo;
+                volverAlMenuOpciones();
             }
             else if(saldo==montoRetiro)
             {
                 System.out.println(color.amarillo+"\nUsted va a extraer la totalidad de su saldo");
-                System.out.println("Usted realizó una extracción de: $"+montoRetiro+". Su saldo disponible en pesos es de: $"+(saldo-montoRetiro)+color.reset);
-                saldo=saldo-montoRetiro;
+                clienteActual.setSaldo(saldo - montoRetiro);
+                System.out.println("Usted realizó una extracción de: $"+montoRetiro+". Su saldo disponible en pesos es de: $"+clienteActual.getSaldo()+color.reset);
                 FileWriter fw = new FileWriter("movimientos.txt", true);
                 PrintWriter salida = new PrintWriter(fw);
                 Date fecha = new Date();
                 salida.println(fecha+" Extracción: $"+montoRetiro);
                 salida.close();
-                volverAlMenuOpciones(saldo);
-                return saldo;
+                volverAlMenuOpciones();
             }
         }
         catch (Exception e)
         {
             System.out.println(color.rojo+"Debe ingresar solo números"+color.reset);
-            extraccionDinero(saldo);
+            extraccionDinero();
         }
-        return 0;
     }
 
     public static void esperar()
@@ -193,13 +296,13 @@ public class HomeBanking {
         }
     }
 
-    public static void mostrarSaldo(int saldo)
+    public static void mostrarSaldo()
     {
-        System.out.println("\nSaldo Disponible: $" + saldo);
-        volverAlMenuOpciones(saldo);
+        System.out.println("\nSaldo Disponible: $" + clienteActual.getSaldo());
+        volverAlMenuOpciones();
     }
 
-    public static void volverAlMenuOpciones(int saldo)
+    public static void volverAlMenuOpciones()
     {
         Scanner miTeclado=new Scanner(System.in);
         System.out.println(color.verde+"\n1. Volver al Menú Principal");
@@ -212,11 +315,11 @@ public class HomeBanking {
 
             if (opc == 1)
             {
-                MenuPrincipal(saldo);
+                MenuPrincipal();
             }
             else if (opc == 2)
             {
-                System.out.println("Por favor, extraiga su tarjeta.");
+                System.out.println("Gracias por usar nuestro servicio.");
                 esperar();
                 presentacionAlumnos();
                 esperar();
@@ -225,20 +328,21 @@ public class HomeBanking {
             else
             {
                 System.out.println(color.rojo+"Opción no válida. Intente de nuevo"+color.rojo);
-                volverAlMenuOpciones(saldo);
+                volverAlMenuOpciones();
             }
         }
         catch (Exception e)
         {
             System.out.println(color.rojo+"Debe ingresar solo números"+color.reset);
-            volverAlMenuOpciones(saldo);
+            volverAlMenuOpciones();
         }
     }
 
-    public static int PagoServicio (int saldo)
+    public static void PagoServicio ()
     {
-        int montoServicio=0;
-        String servicio = null;
+        int saldo = clienteActual.getSaldo();
+        int montoServicio;
+        String servicio;
         Scanner miTeclado= new Scanner(System.in);
         Scanner miTecladoS= new Scanner(System.in);
 
@@ -263,19 +367,18 @@ public class HomeBanking {
                     if (saldo<montoServicio)
                     {
                         System.out.println(color.rojo+"Su saldo es insuficiente para realizar el pago que desea realizar" + color.reset);
-                        volverAlMenuOpciones(saldo);
+                        volverAlMenuOpciones();
                     }
                     else if (saldo>montoServicio || saldo==montoServicio)
                     {
-                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+(saldo-montoServicio)+color.reset);
-                        saldo=saldo-montoServicio;
+                        clienteActual.setSaldo(saldo-montoServicio);
+                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+clienteActual.getSaldo()+color.reset);
                         FileWriter fw = new FileWriter("movimientos.txt", true);
                         PrintWriter salida = new PrintWriter(fw);
                         Date fecha = new Date();
                         salida.println(fecha+" Pago servicio "+servicio+": $" +montoServicio);
                         salida.close();
-                        volverAlMenuOpciones(saldo);
-                        return saldo;
+                        volverAlMenuOpciones();
                     }
                     break;
                 case 2:
@@ -287,19 +390,18 @@ public class HomeBanking {
                     if (saldo<montoServicio)
                     {
                         System.out.println(color.rojo+"Su saldo es insuficiente para realizar el pago que desea realizar" + color.reset);
-                        volverAlMenuOpciones(saldo);
+                        volverAlMenuOpciones();
                     }
                     else if (saldo>montoServicio || saldo==montoServicio)
                     {
-                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+(saldo-montoServicio)+color.reset);
-                        saldo=saldo-montoServicio;
+                        clienteActual.setSaldo(saldo-montoServicio);
+                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+clienteActual.getSaldo()+color.reset);
                         FileWriter fw = new FileWriter("movimientos.txt", true);
                         PrintWriter salida = new PrintWriter(fw);
                         Date fecha = new Date();
                         salida.println(fecha+" Pago servicio "+servicio+": $" +montoServicio);
                         salida.close();
-                        volverAlMenuOpciones(saldo);
-                        return saldo;
+                        volverAlMenuOpciones();
                     }
                     break;
                 case 3:
@@ -311,19 +413,18 @@ public class HomeBanking {
                     if (saldo<montoServicio)
                     {
                         System.out.println(color.rojo+"Su saldo es insuficiente para realizar el pago que desea realizar" + color.reset);
-                        volverAlMenuOpciones(saldo);
+                        volverAlMenuOpciones();
                     }
                     else if (saldo>montoServicio || saldo==montoServicio)
                     {
-                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+(saldo-montoServicio)+color.reset);
-                        saldo=saldo-montoServicio;
+                        clienteActual.setSaldo(saldo-montoServicio);
+                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+clienteActual.getSaldo()+color.reset);
                         FileWriter fw = new FileWriter("movimientos.txt", true);
                         PrintWriter salida = new PrintWriter(fw);
                         Date fecha = new Date();
                         salida.println(fecha+" Pago servicio "+servicio+": $" +montoServicio);
                         salida.close();
-                        volverAlMenuOpciones(saldo);
-                        return saldo;
+                        volverAlMenuOpciones();
                     }
                     break;
                 case 4:
@@ -335,44 +436,43 @@ public class HomeBanking {
                     if (saldo<montoServicio)
                     {
                         System.out.println(color.rojo+"Su saldo es insuficiente para realizar el pago que desea realizar"+color.reset);
-                        volverAlMenuOpciones(saldo);
+                        volverAlMenuOpciones();
                     }
                     else if (saldo>montoServicio || saldo==montoServicio)
                     {
-                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+(saldo-montoServicio)+color.reset);
-                        saldo=saldo-montoServicio;
+                        clienteActual.setSaldo(saldo-montoServicio);
+                        System.out.println(color.amarillo+"Usted realizó el pago de: "+servicio+ " por el valor de: $"+montoServicio+ ". Su saldo en pesos es de: $"+clienteActual.getSaldo()+color.reset);
                         FileWriter fw = new FileWriter("movimientos.txt", true);
                         PrintWriter salida = new PrintWriter(fw);
                         Date fecha = new Date();
                         salida.println(fecha+" Pago servicio "+servicio+": $" +montoServicio);
                         salida.close();
-                        volverAlMenuOpciones(saldo);
-                        return saldo;
+                        volverAlMenuOpciones();
                     }
                     break;
                 default:
                     System.out.println(color.rojo+"Opción no válida. Intente de nuevo"+color.reset);
-                    PagoServicio(saldo);
+                    PagoServicio();
             }
         }
         catch (Exception e)
         {
             System.out.println(color.rojo+"Debe ingresar solo números"+color.reset);
-            PagoServicio(saldo);
+            PagoServicio();
         }
-        return 0;
     }
 
-    public static int Transferencia (int saldo)
+    public static void Transferencia ()
     {
-        int transferencia=0;
+        int saldo = clienteActual.getSaldo();
+        int transferencia;
         Scanner miTeclado= new Scanner(System.in);
         Scanner miTecladoS=new Scanner(System.in);
-        String cuentaDestino;
+        String cuentaDestino = null;
         try
         {
             System.out.println(color.verde+"Ingrese alias o CBU/CVU de la cuenta a la que desea realizar la transferencia"+color.reset);
-            cuentaDestino=miTecladoS.nextLine();
+//            clientes.get=miTecladoS.nextLine();
 
             System.out.print(color.verde+"Ingrese el monto que desea transferir: "+color.reset);
             transferencia=miTeclado.nextInt();
@@ -381,41 +481,37 @@ public class HomeBanking {
             {
                 System.out.println(color.rojo+"\nSu saldo es insuficiente para la transferencia que desea realizar" + color.reset);
                 esperar();
-                volverAlMenuOpciones(saldo);
-                return saldo;
+                volverAlMenuOpciones();
             }
             else if (saldo==transferencia)
             {
+                clienteActual.setSaldo(saldo-transferencia);
                 System.out.println(color.amarillo+"\nUsted va a transferir todo su saldo disponible");
-                System.out.println("Usted realizó una transferencia de pesos: $"+transferencia+ " a la cuenta: "+cuentaDestino+". Su saldo en pesos es de: $"+(saldo-transferencia)+color.reset);
-                saldo=saldo-transferencia;
+                System.out.println("Usted realizó una transferencia de pesos: $"+transferencia+ " a la cuenta: "+cuentaDestino+". Su saldo en pesos es de: $"+clienteActual.getSaldo()+color.reset);
                 FileWriter fw = new FileWriter("movimientos.txt", true);
                 PrintWriter salida = new PrintWriter(fw);
                 Date fecha = new Date();
 
                 salida.println(fecha + " Transferencia: $"+transferencia+"A la cuenta  ALIAS/CBU"+cuentaDestino);					salida.close();
-                volverAlMenuOpciones(saldo);
-                return saldo;
+                volverAlMenuOpciones();
             }
             else if(saldo>transferencia)
             {
-                System.out.println(color.amarillo+"\nUsted realizó una transferencia de pesos: $"+transferencia+" a la cuenta: "+ cuentaDestino+". Su saldo en pesos es de: $"+(saldo-transferencia)+color.reset);
-                saldo=saldo-transferencia;
+                clienteActual.setSaldo(saldo-transferencia);
+                System.out.println(color.amarillo+"\nUsted realizó una transferencia de pesos: $"+transferencia+" a la cuenta: "+ cuentaDestino+". Su saldo en pesos es de: $"+clienteActual.getSaldo()+color.reset);
                 FileWriter fw = new FileWriter("movimientos.txt", true);
                 PrintWriter salida = new PrintWriter(fw);
                 Date fecha = new Date();
                 salida.println(fecha+" Transferencia: $"+transferencia+" a la cuenta ALIAS/CBU: "+cuentaDestino);
                 salida.close();
-                volverAlMenuOpciones(saldo);
-                return saldo;
+                volverAlMenuOpciones();
             }
         }
         catch (Exception e)
         {
             System.out.println(color.rojo+"Debe ingresar solo números"+color.reset);
-            Transferencia(saldo);
+            Transferencia();
         }
-        return 0;
     }
 
     public static void presentacionAlumnos()
@@ -423,5 +519,4 @@ public class HomeBanking {
         System.out.println(color.violeta+"Proyecto Final de Programación I. Alumnos: ");
         System.out.println("Edgardo Arenas"+"\nDavid Adrover"+"\nLeandro Chiarello"+"\nAgustina Estrada"+"\nEmanuel Salvi"+color.reset);
     }
-
 }
