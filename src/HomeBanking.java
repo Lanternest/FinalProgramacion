@@ -218,10 +218,11 @@ public class HomeBanking {
                     PagoServicio();
                     break;
                 case 6:
-                    System.out.println("Por favor, extraiga su tarjeta.");
+                    System.out.println("Gracias por usar nuestro servicio.");
                     esperar();
                     presentacionAlumnos();
-                    System.exit(0);
+                    esperar();
+                    PantallaBienvenida();
                 default:
                     System.out.println(color.rojo+"Opción no válida. Inténtelo de nuevo."+color.reset);
                     MenuPrincipal();
